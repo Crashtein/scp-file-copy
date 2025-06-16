@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  ubuntu1:
+    build: ./build-ssh-ubuntu
+    container_name: ubuntu1
+    hostname: ubuntu1
+    ports:
+      - "2022:22"
+    networks:
+      - ssh_net
+    volumes:
+      - ./:/repo:ro
+
+  ubuntu2:
+    build: ./build-ssh-ubuntu
+    container_name: ubuntu2
+    hostname: ubuntu2
+    ports:
+      - "3022:22"
+    networks:
+      - ssh_net
+    volumes:
+      - ./:/repo:ro
+
+  ubuntu3:
+    build: ./build-ssh-ubuntu
+    container_name: ubuntu3
+    hostname: ubuntu3
+    ports:
+      - "4022:22"
+    networks:
+      - ssh_net
+    volumes:
+      - ./:/repo:ro
+
+networks:
+  ssh_net:
+    driver: bridge

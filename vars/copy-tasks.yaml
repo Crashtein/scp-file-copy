@@ -1,0 +1,8 @@
+copyTasks:
+  - sourceHost: remote-host
+    sourcePath: /test1/
+    targetHosts: 
+    - host: local-host
+      targetPaths: 
+      - /test2
+      - /test3
