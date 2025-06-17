@@ -92,6 +92,7 @@ Created containers have:
 8. Finally run script
 >ansible-playbook /repo/playbook.yaml
 9. Wait till script finishes, then check results. It should have copied your files from `src` directiories into destination directories as it has been configured in `roles/rsync_copy/defaults/main.yml`
-10. Optionaly: setup cron inside container to run script periodically.
+10. Check logs, it should appear in `./files/logs/ubuntu<id>_log/ansible-sync.log`
+11. Optionaly: setup cron inside container to run script periodically.
 >crontab -e
 Example cron to run this script every 5 minutes: `*/5 * * * * ansible-playbook /repo/playbook.yaml`
