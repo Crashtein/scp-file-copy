@@ -11,6 +11,8 @@ services:
       - ssh_net
     volumes:
       - ./:/repo:ro
+      - ./files/ubuntu1/:/files/
+      - ./files/logs/ubuntu1_log/:/var/log/
 
   ubuntu2:
     build: ./build-ssh-ubuntu
@@ -22,6 +24,8 @@ services:
       - ssh_net
     volumes:
       - ./:/repo:ro
+      - ./files/ubuntu2/:/files/
+      - ./files/logs/ubuntu2_log/:/var/log/
 
   ubuntu3:
     build: ./build-ssh-ubuntu
@@ -33,6 +37,8 @@ services:
       - ssh_net
     volumes:
       - ./:/repo:ro
+      - ./files/ubuntu3/:/files/
+      - ./files/logs/ubuntu3_log:/var/log/
 
 networks:
   ssh_net:

@@ -1,0 +1,27 @@
+- name: Set facts
+  set_fact:
+    source_host: "{{ copy_task.source_host }}"
+    source_path: "{{ copy_task.source_path }}"
+
+- name: Get list of files to copy from source
+  find:
+    paths: "{{ copy_task.source_path }}"
+    file_type: file
+    recurse: yes
+  register: files_to_copy
+  delegate_to: "{{ copy_task.source_host }}"
+  vars:
+    ansible_ssh_user: "{{ copy_task.source_user | default('root')}}"
+
+- name: Create list of file paths
+  set_fact:
+    source_files: "{{ files_to_copy.files | map(attribute='path') | list }}"
+
+- name: Process each target host
+  include_tasks: sync_to_target.yml
+  loop: "{{ copy_task.target_hosts }}"
+  loop_control:
+    loop_var: target_host_config
+
+- name: Cleanup source files after successful copies
+  include_tasks: cleanup.yml

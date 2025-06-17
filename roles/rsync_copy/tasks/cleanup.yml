@@ -1,0 +1,22 @@
+- name: Remove successfully copied files from source
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ files_to_cleanup | default([]) }}"
+  delegate_to: "{{ source_host }}"
+  vars:
+    ansible_ssh_user: "{{ copy_task.source_user | default('root')}}"
+  register: cleanup_result
+  failed_when: false
+
+- name: Log file cleanup status
+  lineinfile:
+    path: /var/log/ansible-sync.log
+    line: "{{ ansible_date_time.iso8601 }} - {{ 'SUCCESS' if item.changed else 'INFO' }}: Source file {{ item.item | basename }} {{ 'removed successfully' if item.changed else 'not present, already removed' }} from {{ source_host }}"
+    create: yes
+    mode: '0644'
+  loop: "{{ cleanup_result.results }}"
+  delegate_to: "{{ source_host }}"
+  vars:
+    ansible_ssh_user: "{{ copy_task.source_user | default('root')}}"
+  when: cleanup_result is defined

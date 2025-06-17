@@ -2,14 +2,14 @@ FROM ubuntu:22.04
 
 # update packages, install openssh-server and remove cache
 RUN apt-get update && \
-    apt-get install -y openssh-server cron nano ansible && \
+    apt-get install -y openssh-server cron nano ansible rsync && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # make dirs for sshd and for .ssh keys
 RUN mkdir -p /var/run/sshd /root/.ssh
 
-# set default password for root "root"
+# set default password for root
 RUN echo 'root:root' | chpasswd
 
 COPY ./demo-keys/ssh_keys/ /root/.ssh/

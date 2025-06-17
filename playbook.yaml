@@ -1,67 +1,10 @@
----
-- name: Copy and rename files with logging
+- name: Copy files using rsync
   hosts: localhost
-  gather_facts: no
-  vars_files:
-    - ./vars/copy-tasks.yaml
+  gather_facts: yes
+  # vars:
+  #   ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'  # DO NOT USE IN PRODUCTION ENVIRONMENT (auto accept hosts fingerprints)
+
   tasks:
-    - name: Create a temporary folder for pulling files
-      tempfile:
-        state: directory
-        suffix: _copy_tmp
-      register: tmpdir
-
-    - name: Pull files from sourceHost and rename with .tmp
-      ansible.builtin.shell: |
-        mkdir -p "{{ tmpdir.path }}/copydata"
-        for file in $(find "{{ item.sourcePath }}" -type f); do
-          relpath="${file#{{ item.sourcePath }}}"
-          mkdir -p "$(dirname '{{ tmpdir.path }}/copydata/'"$relpath")"
-          cp "$file" '{{ tmpdir.path }}/copydata/'"$relpath.tmp"
-        done
-      args:
-        executable: /bin/bash
-      delegate_to: "{{ item.sourceHost }}"
-      run_once: true
-      loop: "{{ copyTasks }}"
-
-    - name: Push .tmp files to each target host and log result
-      block:
-        - name: Copy .tmp files to target path
-          ansible.builtin.copy:
-            src: "{{ tmpdir.path }}/copydata/"
-            dest: "{{ target_path }}/"
-            mode: preserve
-            owner: root
-            group: root
-          delegate_to: "{{ target_host }}"
-          register: copy_result
-          ignore_errors: true
-
-        - name: Log result to /var/log/ansible_copy.log
-          ansible.builtin.lineinfile:
-            path: /var/log/ansible_copy.log
-            create: yes
-            line: |
-              [{{ ansible_date_time.iso8601 }}] Copy to {{ target_host }}:{{ target_path }} {{ 'SUCCESS' if copy_result is succeeded else 'FAILED' }}
-          delegate_to: "{{ target_host }}"
-
-        - name: Rename copied .tmp files to original names (remove .tmp)
-          ansible.builtin.shell: |
-            find "{{ target_path }}" -type f -name "*.tmp" | while read f; do
-              mv "$f" "${f%.tmp}"
-            done
-          args:
-            executable: /bin/bash
-          when: copy_result is succeeded
-          delegate_to: "{{ target_host }}"
-      loop: "{{ copyTasks }}"
-      loop_control:
-        label: "{{ target_host }}:{{ target_path }}"
-      vars:
-        target_host: "{{ item2.host }}"
-        target_path: "{{ item3 }}"
-      with_subelements:
-        - "{{ item.targetHosts }}"
-        - targetPaths
-        - skip_missing: true
+    - name: Include rsync copy role
+      include_role:
+        name: rsync_copy

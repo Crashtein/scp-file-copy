@@ -1,0 +1,5 @@
+- name: Process copy tasks in parallel
+  include_tasks: copy_files.yml
+  loop: "{{ copy_tasks }}"
+  loop_control:
+    loop_var: copy_task

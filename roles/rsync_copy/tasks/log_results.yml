@@ -1,0 +1,39 @@
+- name: Log successful sync operation
+  lineinfile:
+    path: /var/log/ansible-sync.log
+    line: "{{ ansible_date_time.iso8601 }} - SUCCESS: Files synced from {{ source_host }}:{{ source_path }} to {{ target_host }}:{{ target_path }}"
+    create: yes
+    mode: '0644'
+  delegate_to: "{{ target_host }}"
+  vars:
+    ansible_ssh_user: "{{ target_host_config.user | default('root')}}"
+
+- name: Verify individual files were copied successfully
+  stat:
+    path: "{{ target_path }}/{{ item | basename }}"
+  loop: "{{ source_files }}"
+  register: file_verification
+  delegate_to: "{{ target_host }}"
+  vars:
+    ansible_ssh_user: "{{ target_host_config.user | default('root')}}"
+
+- name: Log individual file copy status
+  lineinfile:
+    path: /var/log/ansible-sync.log
+    line: "{{ ansible_date_time.iso8601 }} - {{ 'SUCCESS' if item.stat.exists else 'ERROR' }}: File {{ item.item | basename }} {{ 'copied successfully' if item.stat.exists else 'failed to copy' }} to {{ target_host }}:{{ target_path }}"
+    create: yes
+    mode: '0644'
+  loop: "{{ file_verification.results }}"
+  delegate_to: "{{ target_host }}"
+  vars:
+    ansible_ssh_user: "{{ target_host_config.user | default('root')}}"
+  when: 
+    - file_verification is defined
+
+- name: Add successful files to cleanup list
+  set_fact:
+    files_to_cleanup: "{{ files_to_cleanup | default([]) + [item.item] }}"
+  loop: "{{ file_verification.results }}"
+  when: 
+    - file_verification is defined
+    - item.stat.exists

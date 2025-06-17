@@ -1,0 +1,4 @@
+files/logs/*
+files/ubuntu*/src*/*
+files/ubuntu*/dest*/*
+build-ssh-ubuntu/demo-keys/ssh_keys

@@ -1,0 +1,25 @@
+copy_tasks:
+  - source_host: ubuntu1
+    source_user: root
+    source_path: /files/src1
+    target_hosts: 
+    - host: ubuntu2
+      user: root
+      target_paths: 
+      - /files/dest1
+      - /files/dest2
+      - /files/dest3
+      - /files/dest4
+    - host: ubuntu3
+      target_paths: 
+      - /files/dest1
+  - source_host: ubuntu2
+    user: root
+    source_path: /files/src1
+    target_hosts: 
+    - host: ubuntu1
+      target_paths: 
+      - /files/dest5
+    - host: ubuntu3
+      target_paths: 
+      - /files/dest2

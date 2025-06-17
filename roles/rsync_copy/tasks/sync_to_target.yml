@@ -1,0 +1,64 @@
+- name: Set target host facts
+  set_fact:
+    target_host: "{{ target_host_config.host }}"
+    target_paths: "{{ target_host_config.target_paths }}"
+
+- name: Ensure target directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ target_paths }}"
+  delegate_to: "{{ target_host }}"
+  vars:
+    ansible_ssh_user: "{{ target_host_config.user | default('root')}}"
+
+- name: Sync files to all target paths in parallel
+  command: >
+    rsync -avz --compress-level=1 --bwlimit=0 --whole-file
+    --block-size=131072 --partial
+    --rsh="ssh -T -c aes128-gcm@openssh.com -o Compression=no -x"
+    {{ source_path }}/
+    {{ target_host_config.user | default('root') }}@{{ target_host }}:{{ item }}/
+  loop: "{{ target_paths }}"
+  delegate_to: "{{ source_host }}"
+  vars:
+    ansible_ssh_user: "{{ copy_task.source_user | default('root')}}"
+  async: 300
+  poll: 0
+  register: rsync_jobs
+
+- name: Wait for all rsync operations to complete
+  async_status:
+    jid: "{{ item.ansible_job_id }}"
+  loop: "{{ rsync_jobs.results }}"
+  register: rsync_results
+  until: rsync_results.finished
+  retries: 60
+  delay: 5
+  when: item.ansible_job_id is defined
+  delegate_to: "{{ source_host }}"
+  vars:
+    ansible_ssh_user: "{{ copy_task.source_user | default('root')}}"
+
+- name: Log sync results
+  lineinfile:
+    path: /var/log/ansible-sync.log
+    line: "{{ ansible_date_time.iso8601 }} - {{ 'SUCCESS' if item.rc == 0 else 'ERROR' }}: Rsync from {{ source_host }}:{{ source_path }} to {{ target_host }}:{{ rsync_jobs.results[ansible_loop.index0].item }} {{ 'completed' if item.rc == 0 else 'failed' }}"
+    create: yes
+    mode: '0644'
+  loop: "{{ rsync_results.results }}"
+  delegate_to: "{{ target_host }}"
+  vars:
+    ansible_ssh_user: "{{ target_host_config.user | default('root')}}"
+  loop_control:
+    extended: yes
+
+- name: Log files sync results
+  include_tasks: log_results.yml
+  loop: "{{ target_paths }}"
+  vars:
+    ansible_ssh_user: "{{ target_host_config.user | default('root')}}"
+  loop_control:
+    loop_var: target_path
+
